@@ -5,6 +5,8 @@ const Dashboard = () => {
     const [lists, setLists] = useState([]);
     const [newListTitle, setNewListTitle] = useState('');
     const [newTaskTitles, setNewTaskTitles] = useState({});
+    const [editingTask, setEditingTask] = useState(null);
+    const [editedTaskTitle, setEditedTaskTitle] = useState('');
     const token = localStorage.getItem('token');
 
     const headers = {
@@ -64,6 +66,25 @@ const Dashboard = () => {
             fetchLists();
         } catch (error) {
             console.error('Failed to update task:', error);
+        }
+    };
+
+    const startEditing = (task) => {
+        setEditingTask(task.id);
+        setEditedTaskTitle(task.title);
+    };
+
+    const saveEditedTask = async (listId, taskId) => {
+        try {
+            await axios.put(
+                `http://localhost:3000/lists/${listId}/tasks/${taskId}`,
+                { title: editedTaskTitle },
+                { headers }
+            );
+            setEditingTask(null);
+            fetchLists();
+        } catch (error) {
+            console.error('Failed to save task:', error);
         }
     };
 
@@ -127,13 +148,35 @@ const Dashboard = () => {
                                             onChange={() => toggleTaskDone(list.id, task.id, task.done)}
                                             className="h-5 w-5 rounded-sm text-blue-600 transition-colors"
                                         />
-                                        <span className={`text-lg ${task.done ? 'line-through text-gray-400' : ''}`}>
-                      {task.title}
-                    </span>
+                                        {editingTask === task.id ? (
+                                            <input
+                                                type="text"
+                                                value={editedTaskTitle}
+                                                onChange={(e) => setEditedTaskTitle(e.target.value)}
+                                                className="rounded-md border border-gray-300 p-1 text-sm focus:outline-none"
+                                            />
+                                        ) : (
+                                            <span
+                                                className={`text-lg ${task.done ? 'line-through text-gray-400' : ''}`}
+                                            >
+                        {task.title}
+                      </span>
+                                        )}
                                     </div>
-                                    <button onClick={() => deleteTask(list.id, task.id)} className="text-red-500 transition-colors hover:text-red-700">
-                                        Видалити
-                                    </button>
+                                    {editingTask === task.id ? (
+                                        <button onClick={() => saveEditedTask(list.id, task.id)} className="text-blue-500 transition-colors hover:text-blue-700">
+                                            Зберегти
+                                        </button>
+                                    ) : (
+                                        <div className="flex space-x-2">
+                                            <button onClick={() => startEditing(task)} className="text-gray-500 transition-colors hover:text-gray-700">
+                                                Редагувати
+                                            </button>
+                                            <button onClick={() => deleteTask(list.id, task.id)} className="text-red-500 transition-colors hover:text-red-700">
+                                                Видалити
+                                            </button>
+                                        </div>
+                                    )}
                                 </li>
                             ))}
                         </ul>
